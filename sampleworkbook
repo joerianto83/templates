@@ -1,0 +1,121 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2018-05-01/DeploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "rgLocation": {
+            "type": "string"
+        },
+        "resourceGroup": {
+            "type": "string"
+        },
+        "environmentType": {
+            "type": "string"
+        },
+        "logAnalyticsWorkspaceName": {
+            "type": "string"
+        },
+        "workBookSourceId": {
+            "type": "string",
+            "defaultValue": "Azure Monitor"
+        },
+        "workBookType": {
+            "type": "string",
+            "defaultValue": "workbook"
+        },
+        "workBook01": {
+            "type": "object",
+            "defaultValue": {
+                "id": "[newGuid()]",
+                "displayName": "Perf | Remote Desktop Servers"
+            }
+        },
+        "workBook02": {
+            "type": "object",
+            "defaultValue": {
+                "id": "[newGuid()]",
+                "displayName": "Perf | ADFS and ADSync Servers"
+            }
+        }
+    },
+    "variables": {
+        "environment": "[parameters('environmentType')]",
+        "SubscriptionId": "[subscription().subscriptionId]",
+        "subscription": "[concat('/subscriptions/',variables('SubscriptionId'),'/resourceGroups/')]",
+        "crossComponentResources": "[concat(variables('subscription'), parameters('resourceGroup'), '/providers/Microsoft.OperationalInsights/workspaces/', parameters('logAnalyticsWorkspaceName'))]",
+        "contentWorkBook01": {
+            "Line01": "{\"version\":\"Notebook/1.0\",\"items\":[",
+            "Line021": "{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"ConfigurationData\\r\\n| where SvcName == \\\"TSGateway\\\" and SvcState == \\\"Running\\\"\\r\\n| project Computer\\r\\n| join kind=inner (\\r\\n    Heartbeat\\r\\n\\t| where TimeGenerated >= startofday(now()-7d) and TimeGenerated <= now()\\r\\n) on Computer\\r\\n| summarize heartbeat_per_hour=count() by bin_at(TimeGenerated, 1h, startofday(now()-7d)), Computer\\r\\n| extend available_per_hour=iff(heartbeat_per_hour>0, true, false)\\r\\n| summarize Available=countif(available_per_hour==true) by Computer\\r\\n| extend Total=round((now()-startofday(now()-7d))/1h)\\r\\n| extend Rate=round(Available*100/Total,2)\\r\\n| project [\\\"Computer\\\"]=strcat('🖥️ ', Computer), Available, Total, Rate\",\"size\":1,\"title\":\"Availability last 7 Days\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"",
+            "Line022": "\"]},\"customWidth\":\"33\",\"name\":\"query - 1\"},"
+        },
+        "serializedDataWorkBook01": "[concat(variables('contentWorkBook01').Line01,variables('contentWorkBook01').Line021,variables('crossComponentResources'),variables('contentWorkBook01').Line022)]",
+        "contentWorkBook02": {
+            "Line01": "{\"version\":\"Notebook/1.0\",\"items\":[",
+            "Line021": "{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"ConfigurationData\\r\\n| where (SvcName == \\\"adfssrv\\\" or SvcName == \\\"ADSync\\\") and SvcState == \\\"Running\\\"\\r\\n| project Computer\\r\\n| join kind=inner (\\r\\nHeartbeat\\r\\n| where TimeGenerated >= startofday(now()-7d) and TimeGenerated <= now()\\r\\n) on Computer\\r\\n| summarize heartbeat_per_hour=count() by bin_at(TimeGenerated, 1h, startofday(now()-7d)), Computer\\r\\n| extend available_per_hour=iff(heartbeat_per_hour>0, true, false)\\r\\n| summarize Available=countif(available_per_hour==true) by Computer\\r\\n| extend Total=round((now()-startofday(now()-7d))/1h)\\r\\n| extend Rate=round(Available*100/Total,2)\",\"size\":4,\"aggregation\":2,\"title\":\"Availablity Rate in % over last 7 days\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\",\"crossComponentResources\":[\"",
+            "Line022": "\"],\"graphSettings\":{\"type\":0,\"topContent\":{\"columnMatch\":\"Computer\",\"formatter\":1},\"centerContent\":{\"columnMatch\":\"total_available_hours\",\"formatter\":1,\"numberFormat\":{\"unit\":17,\"options\":{\"maximumSignificantDigits\":3,\"maximumFractionDigits\":2}}}},\"chartSettings\":{\"xAxis\":\"Computer\",\"yAxis\":[\"availability_rate\"],\"ySettings\":{\"min\":0,\"max\":100}}},\"customWidth\":\"50\",\"name\":\"query - 1\",\"styleSettings\":{\"margin\":\"10px\",\"padding\":\"10px\",\"progressStyle\":\"loader\"}},"         
+        },
+        "serializedDataWorkBook02": "[concat(variables('contentWorkBook02').line01,variables('contentWorkBook02').Line021,variables('crossComponentResources'),variables('contentWorkBook02').Line022)]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2018-05-01",
+            "name": "workBooks",
+            "resourceGroup": "[parameters('resourceGroup')]",
+            "dependsOn": [
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                    },
+                    "resources": [
+                        {
+                            "name": "[parameters('workBook01').id]",
+                            "location": "[parameters('rgLocation')]",
+                            "type": "microsoft.insights/workbooks",
+                            "apiVersion": "2018-06-17-preview",
+                            "dependsOn": [
+                            ],
+                            "kind": "shared",
+                            "properties": {
+                                "displayName": "[concat(parameters('workBook01').displayName, variables('environment'))]",
+                                "serializedData": "[variables('serializedDataWorkBook01')]",
+                                "version": "1.0",
+                                "sourceId": "[parameters('workBookSourceId')]",
+                                "category": "[parameters('workbookType')]"
+                            }
+                        },
+                        {
+                            "name": "[parameters('workBook02').id]",
+                            "location": "[parameters('rgLocation')]",
+                            "type": "microsoft.insights/workbooks",
+                            "apiVersion": "2018-06-17-preview",
+                            "dependsOn": [
+                            ],
+                            "kind": "shared",
+                            "properties": {
+                                "displayName": "[concat(parameters('workBook02').displayName, variables('environment'))]",
+                                "serializedData": "[variables('serializedDataWorkBook02')]",
+                                "version": "1.0",
+                                "sourceId": "[parameters('workBookSourceId')]",
+                                "category": "[parameters('workbookType')]"
+                            }
+                        }                    
+                    ]
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "workbookId01": {
+            "type": "string",
+            "value": "[resourceId('microsoft.insights/workbooks', parameters('workBook01').id)]"
+        },
+        "workbookId02": {
+            "type": "string",
+            "value": "[resourceId('microsoft.insights/workbooks', parameters('workBook02').id)]"
+        }
+    }
+}
