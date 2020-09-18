@@ -55,7 +55,7 @@
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
             "name": "[concat('rgAssignment', copyIndex())]",
-            "resourceGroup": "[parameters('resourceGroups')[copyIndex()].rgName]",
+            "resourceGroup": "[parameters('resourceGroups')[copyIndex()].resourceGroups]",
             "copy": {
                 "name": "deploymentCopy",
                 "count": "[length(parameters('resourceGroups'))]"
