@@ -27,13 +27,37 @@
             "type": "array",
             "metadata": {
                 "description": "Specify an array of objects, containing tuples of Azure Active Directory principalId, a Azure roleDefinitionId, and an optional principalIdDisplayName. The roleDefinition specified is granted to the principalId in the provider's Active Directory and the principalIdDisplayName is visible to customers."
-            }
+            },
+            "defaultValue": [
+                {
+                    "principalId": "ee8f6d35-15f2-4252-b1b8-591358e8a244",
+                    "roleDefinitionId": "acdd72a7-3385-48ef-bd42-f606fba81ae7",
+                    "principalIdDisplayName": "PIM_Group"
+                },
+                {
+                    "principalId": "ee8f6d35-15f2-4252-b1b8-591358e8a244",
+                    "roleDefinitionId": "91c1777a-f3dc-4fae-b103-61d183457e46",
+                    "principalIdDisplayName": "PIM_Group"
+                }
+            ]
+
         },
         "resourceGroups": {
             "type": "array",
             "metadata": {
                 "description": "Note: resource groups must already exist in tenant"
             },
+            "defaultValue": [
+                {
+                    "rgName": "test"
+                },
+                {
+                    "rgName": "test2"
+                },
+                {
+                    "rgName": "test3"
+                }
+            ]
         }
     },
     "variables": {
@@ -55,7 +79,7 @@
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
             "name": "[concat('rgAssignment', copyIndex())]",
-            "resourceGroup": "[parameters('resourceGroups')[copyIndex()].resourceGroups]",
+            "resourceGroup": "[parameters('resourceGroups')[copyIndex()].rgName]",
             "copy": {
                 "name": "deploymentCopy",
                 "count": "[length(parameters('resourceGroups'))]"
@@ -73,7 +97,7 @@
                         {
                             "type": "Microsoft.ManagedServices/registrationAssignments",
                             "apiVersion": "2019-06-01",
-                            "name": "[guid(parameters('resourceGroups')[copyIndex()].resourceGroups)]",
+                            "name": "[guid(parameters('resourceGroups')[copyIndex()].rgName)]",
                             "properties": {
                                 "registrationDefinitionId": "[resourceId('Microsoft.ManagedServices/registrationDefinitions/', variables('mspRegistrationName'))]"
                             }
