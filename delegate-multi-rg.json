@@ -49,13 +49,13 @@
             },
             "defaultValue": [
                 {
-                    "rgName": "test"
+                    "ResourceGroupName": "test"
                 },
                 {
-                    "rgName": "test2"
+                    "ResourceGroupName": "test2"
                 },
                 {
-                    "rgName": "test3"
+                    "ResourceGroupName": "test3"
                 }
             ]
         }
@@ -79,7 +79,7 @@
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2018-05-01",
             "name": "[concat('rgAssignment', copyIndex())]",
-            "resourceGroup": "[parameters('resourceGroups')[copyIndex()].rgName]",
+            "resourceGroup": "[parameters('resourceGroups')[copyIndex()].ResourceGroupName]",
             "copy": {
                 "name": "deploymentCopy",
                 "count": "[length(parameters('resourceGroups'))]"
@@ -97,7 +97,7 @@
                         {
                             "type": "Microsoft.ManagedServices/registrationAssignments",
                             "apiVersion": "2019-06-01",
-                            "name": "[guid(parameters('resourceGroups')[copyIndex()].rgName)]",
+                            "name": "[guid(parameters('resourceGroups')[copyIndex()].ResourceGroupName)]",
                             "properties": {
                                 "registrationDefinitionId": "[resourceId('Microsoft.ManagedServices/registrationDefinitions/', variables('mspRegistrationName'))]"
                             }
